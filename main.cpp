@@ -7,6 +7,12 @@
 
 using namespace std;
 
+struct User
+{
+    int userId = 0;
+    string userLogin = "", userPassword = "";
+};
+
 struct Person
 {
     int idNumber = 0;
@@ -29,13 +35,65 @@ void loadPersonsFromVectorToFile (vector<Person> &persons);
 
 void deletePerson (vector<Person> &persons);
 
+void userMenu (vector<Person> &persons);
+
+void loginAndRegistrationMenu (vector<User> &users);
+
+void userRegistration(vector<User> &users);
+
+void userLogin(vector<User> &users);
+
 int main()
 {
     vector<Person> persons;
-    loadPersonFromFileToVector(persons);
-    displayAllPersons(persons);
+    vector<User> users;
+    //loadPersonFromFileToVector(persons);
+    //displayAllPersons(persons);
 
-    char userChoice;
+    loginAndRegistrationMenu (users);
+
+    userMenu (persons);
+
+
+
+    return 0;
+}
+
+void loginAndRegistrationMenu (vector<User> &users)
+{
+    char nonLoggedUserChoice;
+    int loggedUserId = 0;
+
+    while(true)
+    {
+        if (loggedUserId == 0)
+        {
+            system("cls");
+            cout << "1. Logowanie" << endl;
+            cout << "2. Rejestracja" << endl;
+            cout << "9. Zakoncz program" << endl;
+            cin >> nonLoggedUserChoice;
+
+            if (nonLoggedUserChoice == '1')
+            {
+                continue;
+            }
+            else if (nonLoggedUserChoice == '2')
+            {
+                userRegistration(users);
+                break;
+            }
+            else if (nonLoggedUserChoice == '9')
+            {
+                exit(0);
+            }
+        }
+    }
+}
+
+void userMenu (vector<Person> &persons)
+{
+    char loggedUserChoice;
 
     while(true)
     {
@@ -49,39 +107,88 @@ int main()
         cout << "6. Edytuj adresata" << endl;
         cout << "9. Zakoncz program" << endl;
         cout << "Twoj wybor: ";
-        cin >> userChoice;
+        cin >> loggedUserChoice;
 
-        if (userChoice == '1')
+        if (loggedUserChoice == '1')
         {
             addPerson(persons);
         }
-        else if (userChoice == '2')
+        else if (loggedUserChoice == '2')
         {
             searchPersonByName(persons);
         }
-        else if (userChoice == '3')
+        else if (loggedUserChoice == '3')
         {
             searchPersonBySurname(persons);
         }
-        else if (userChoice == '4')
+        else if (loggedUserChoice == '4')
         {
             displayAllPersons(persons);
         }
-        else if (userChoice == '5')
+        else if (loggedUserChoice == '5')
         {
             deletePerson(persons);
         }
-        else if (userChoice == '6')
+        else if (loggedUserChoice == '6')
         {
             editPerson(persons);
         }
-        else if (userChoice == '9')
+        else if (loggedUserChoice == '9')
         {
             cout << endl << "Do zobaczenia!" << endl;
             exit(0);
         }
     }
-    return 0;
+}
+
+void userRegistration(vector<User> &users)
+{
+    string userLogin, userPassword;
+
+    User newUser;
+    int sizeOfUserVector;
+    fstream file;
+
+    file.open ("Uzytkownicy.txt", ios::out | ios::app);
+    if (file.good() == false)
+    {
+        file.open( "Uzytkownicy.txt", ios::out | ios::app);
+    }
+
+    system ("cls");
+    cout << ">>> REJESTRACJA <<<" << endl;
+    cout << "Podaj LOGIN: ";
+    cin >> newUser.userLogin;
+    cout << "Podaj HASLO: ";
+    cin >> newUser.userPassword;
+
+    sizeOfUserVector = users.size();
+    if(sizeOfUserVector == 0)
+    {
+        newUser.userId = 1;
+    }
+    else
+    {
+        for (int i = sizeOfUserVector; i >= sizeOfUserVector - 1; i--)
+        {
+            newUser.userId = users[i].userId + 1;
+        }
+    }
+    if (file.good())
+    {
+        file << newUser.userId << "|";
+        file << newUser.userLogin << "|";
+        file << newUser.userPassword << "|" << endl;
+
+        cout << "Zarejestrowales sie pomyslnie." << endl;
+        Sleep(1000);
+    }
+    else
+    {
+        cout << "Nie mozna otworzyc pliku: Uzytkownicy.txt" << endl;
+    }
+    users.push_back(newUser);
+    file.close();
 }
 
 void deletePerson (vector<Person> &persons)
