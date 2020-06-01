@@ -15,13 +15,13 @@ struct User
 
 struct Person
 {
-    int idNumber = 0;
+    int idNumber = 0, userIdNumber = 0;
     string name = "", surname = "", phoneNumber = "", emailAdress = "", adress = "";
 };
 
 void loadPersonFromFileToVector(vector<Person> &persons);
 
-void addPerson(vector<Person> &persons);
+void addPerson(vector<Person> &persons, int loggedUserId);
 
 void displayAllPersons(vector<Person> &persons);
 
@@ -35,40 +35,52 @@ void loadPersonsFromVectorToFile (vector<Person> &persons);
 
 void deletePerson (vector<Person> &persons);
 
-void userMenu (vector<Person> &persons);
+void userMenu (vector<Person> &persons, int loggedUserId);
 
-void loginAndRegistrationMenu (vector<User> &users);
+int loginAndRegistrationMenu (vector<User> &users, int loggedUserId);
 
 void userRegistration(vector<User> &users);
 
 void userLogin(vector<User> &users);
 
+void loadUsersFromFileToVector (vector<User> &users);
+
+int userLogin(vector<User> &users, int currentUserId);
+
 int main()
 {
     vector<Person> persons;
     vector<User> users;
-    //loadPersonFromFileToVector(persons);
+    int loggedUserId = 0;
+
+    loadUsersFromFileToVector (users);
+    loadPersonFromFileToVector(persons);
+
     //displayAllPersons(persons);
 
-    loginAndRegistrationMenu (users);
+    loggedUserId = loginAndRegistrationMenu (users, loggedUserId);
 
-    userMenu (persons);
+
+
+    userMenu (persons, loggedUserId);
 
 
 
     return 0;
 }
 
-void loginAndRegistrationMenu (vector<User> &users)
+int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
 {
     char nonLoggedUserChoice;
-    int loggedUserId = 0;
+    int currentUserId = 0;
 
     while(true)
     {
-        if (loggedUserId == 0)
+        if (currentUserId == 0)
         {
             system("cls");
+            cout << "PROGRAM KSIAZKA ADRESOWA" << endl;
+            cout << "Aby przejsc do panelu uzytkownika wystarczy sie zalogowac. Jezeli nie masz jeszcze konta - dokonaj rejestracji." << endl;
             cout << "1. Logowanie" << endl;
             cout << "2. Rejestracja" << endl;
             cout << "9. Zakoncz program" << endl;
@@ -76,11 +88,21 @@ void loginAndRegistrationMenu (vector<User> &users)
 
             if (nonLoggedUserChoice == '1')
             {
-                continue;
+                while(loggedUserId == 0)
+                {
+                    loggedUserId = userLogin(users, currentUserId);
+                }
+                return loggedUserId;
+                break;
             }
             else if (nonLoggedUserChoice == '2')
             {
                 userRegistration(users);
+                while(loggedUserId == 0)
+                {
+                    loggedUserId = userLogin(users, currentUserId);
+                }
+                return loggedUserId;
                 break;
             }
             else if (nonLoggedUserChoice == '9')
@@ -91,9 +113,13 @@ void loginAndRegistrationMenu (vector<User> &users)
     }
 }
 
-void userMenu (vector<Person> &persons)
+void userMenu (vector<Person> &persons, int loggedUserId)
 {
     char loggedUserChoice;
+
+    cout << "Logged User ID: " << loggedUserId << endl;
+    Sleep(3000);
+
 
     while(true)
     {
@@ -111,7 +137,7 @@ void userMenu (vector<Person> &persons)
 
         if (loggedUserChoice == '1')
         {
-            addPerson(persons);
+            addPerson(persons, loggedUserId);
         }
         else if (loggedUserChoice == '2')
         {
@@ -139,6 +165,46 @@ void userMenu (vector<Person> &persons)
             exit(0);
         }
     }
+}
+
+int userLogin(vector<User> &users, int currentUserId)
+{
+
+    string login, password;
+    int i = 0;
+    system ("cls");
+    cout << ">>> LOGOWANIE <<<" << endl;
+    cout << "Podaj LOGIN: ";
+    cin >> login;
+
+    while (i < users.size())
+    {
+        if (users[i].userLogin == login)
+        {
+            do
+            {
+                for (int loginAttempt = 0; loginAttempt < 3; loginAttempt++)
+                {
+                    cout << "Podaj haslo. Pozostalo prob" << 3 - loginAttempt << ": ";
+                    cin >> password;
+                    if (users[i].userPassword == password)
+                    {
+                        cout << "Zalogowales sie." << endl;
+                        currentUserId = users[i].userId;
+                        Sleep(1000);
+                        return currentUserId;
+                    }
+                }
+                cout << "Podales 3 razy bledne haslo. Poczekaj 3 sekundy przed kolejna proba." << endl;
+                Sleep(3000);
+
+            }while(password != users[i].userPassword);
+        }
+        i++;
+    }
+    cout << "Nie ma uzytkownika z takim loginem. Sprobuj ponownie." << endl;
+    Sleep(2000);
+    return 0;
 }
 
 void userRegistration(vector<User> &users)
@@ -180,8 +246,8 @@ void userRegistration(vector<User> &users)
         file << newUser.userLogin << "|";
         file << newUser.userPassword << "|" << endl;
 
-        cout << "Zarejestrowales sie pomyslnie." << endl;
-        Sleep(1000);
+        cout << "Zarejestrowales sie pomyslnie. Aby przejsc do panelu uzytkownika - zaloguj sie." << endl;
+        Sleep(2000);
     }
     else
     {
@@ -367,7 +433,7 @@ void displayAllPersons(vector<Person> &persons)
     file.close();
 }
 
-void addPerson(vector<Person> &persons)
+void addPerson(vector<Person> &persons, int loggedUserId)
 {
     Person newPerson;
     int sizeOfPersonVector;
@@ -394,7 +460,12 @@ void addPerson(vector<Person> &persons)
     cin.sync();
     getline(cin, newPerson.adress);
 
+    newPerson.userIdNumber = loggedUserId;
+
     sizeOfPersonVector = persons.size();
+
+
+
     if(sizeOfPersonVector == 0)
     {
         newPerson.idNumber = 1;
@@ -404,11 +475,14 @@ void addPerson(vector<Person> &persons)
         for (int i = sizeOfPersonVector; i >= sizeOfPersonVector - 1; i--)
         {
             newPerson.idNumber = persons[i].idNumber + 1;
+            cout << "wielkosc wektora: " << newPerson.idNumber << endl;
+            system("pause");
         }
     }
     if (file.good())
     {
         file << newPerson.idNumber << "|";
+        file << newPerson.userIdNumber << "|";
         file << newPerson.name << "|";
         file << newPerson.surname << "|";
         file << newPerson.phoneNumber << "|";
@@ -450,6 +524,7 @@ void searchPersonByName(vector<Person> &persons)
         if (persons[j].name == nameOfSearchingPerson)
         {
             cout << persons[j].idNumber << "|";
+            cout << persons[j].userIdNumber << "|";
             cout << persons[j].name << "|";
             cout << persons[j].surname << "|";
             cout << persons[j].phoneNumber << "|";
@@ -484,6 +559,7 @@ void searchPersonBySurname(vector<Person> &persons)
         if (persons[j].surname == surnameOfSearchingPerson)
         {
             cout << persons[j].idNumber << "|";
+            cout << persons[j].userIdNumber << "|";
             cout << persons[j].name << "|";
             cout << persons[j].surname << "|";
             cout << persons[j].phoneNumber << "|";
@@ -521,30 +597,78 @@ void loadPersonFromFileToVector (vector<Person> &persons)
                     numberOfSign++;
                     break;
                 case 1:
-                    newPerson.name = partOfLine;
+                    newPerson.userIdNumber = atoi(partOfLine.c_str());
                     numberOfSign++;
                     break;
                 case 2:
-                    newPerson.surname = partOfLine;
+                    newPerson.name = partOfLine;
                     numberOfSign++;
                     break;
                 case 3:
-                    newPerson.phoneNumber = partOfLine;
+                    newPerson.surname = partOfLine;
                     numberOfSign++;
                     break;
                 case 4:
-                    newPerson.emailAdress = partOfLine;
+                    newPerson.phoneNumber = partOfLine;
                     numberOfSign++;
                     break;
                 case 5:
+                    newPerson.emailAdress = partOfLine;
+                    numberOfSign++;
+                    break;
+                case 6:
                     newPerson.adress = partOfLine;
                     numberOfSign++;
                     break;
                 }
-                if (numberOfSign >= 6)
+                if (numberOfSign >= 7)
                 {
                     numberOfSign = 0;
                     persons.push_back(newPerson);
+                }
+            }
+        }
+    }
+    file.close();
+}
+
+void loadUsersFromFileToVector (vector<User> &users)
+{
+    User newUser;
+    char sign = '|';
+    int numberOfSign = 0;
+    string partOfLine;
+    fstream file;
+    file.open("Uzytkownicy.txt", ios::in);
+    if (file.good() == true)
+    {
+        if(file.eof() == false)
+        {
+            while(getline(file, partOfLine, sign))
+            {
+                switch(numberOfSign)
+                {
+                case 0:
+                    if(partOfLine == "\n")
+                    {
+                        break;
+                    }
+                    newUser.userId = atoi(partOfLine.c_str());
+                    numberOfSign++;
+                    break;
+                case 1:
+                    newUser.userLogin = partOfLine;
+                    numberOfSign++;
+                    break;
+                case 2:
+                    newUser.userPassword = partOfLine;
+                    numberOfSign++;
+                    break;
+                }
+                if (numberOfSign >= 3)
+                {
+                    numberOfSign = 0;
+                    users.push_back(newUser);
                 }
             }
         }
