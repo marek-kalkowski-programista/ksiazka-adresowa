@@ -35,7 +35,7 @@ void loadPersonsFromVectorToFile (vector<Person> &persons);
 
 void deletePerson (vector<Person> &persons);
 
-void userMenu (vector<Person> &persons, int loggedUserId);
+void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId);
 
 int loginAndRegistrationMenu (vector<User> &users, int loggedUserId);
 
@@ -47,6 +47,10 @@ void loadUsersFromFileToVector (vector<User> &users);
 
 int userLogin(vector<User> &users, int currentUserId);
 
+void changePassword(vector<User> &users, int loggedUserId);
+
+void loadUsersFromVectorToFile (vector<User> &users);
+
 int main()
 {
     vector<Person> persons;
@@ -54,15 +58,16 @@ int main()
     int loggedUserId = 0;
 
     loadUsersFromFileToVector (users);
-    loadPersonFromFileToVector(persons);
+
 
     //displayAllPersons(persons);
 
     loggedUserId = loginAndRegistrationMenu (users, loggedUserId);
 
+    loadPersonFromFileToVector(persons);
 
 
-    userMenu (persons, loggedUserId);
+    userMenu (users, persons, loggedUserId);
 
 
 
@@ -80,10 +85,11 @@ int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
         {
             system("cls");
             cout << "PROGRAM KSIAZKA ADRESOWA" << endl;
-            cout << "Aby przejsc do panelu uzytkownika wystarczy sie zalogowac. Jezeli nie masz jeszcze konta - dokonaj rejestracji." << endl;
+            cout << "Aby przejsc do panelu uzytkownika wystarczy sie zalogowac. Jezeli nie masz jeszcze konta - dokonaj rejestracji." << endl << endl;
             cout << "1. Logowanie" << endl;
             cout << "2. Rejestracja" << endl;
             cout << "9. Zakoncz program" << endl;
+            cout << "Twoj wybor: ";
             cin >> nonLoggedUserChoice;
 
             if (nonLoggedUserChoice == '1')
@@ -113,7 +119,7 @@ int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
     }
 }
 
-void userMenu (vector<Person> &persons, int loggedUserId)
+void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId)
 {
     char loggedUserChoice;
 
@@ -131,6 +137,8 @@ void userMenu (vector<Person> &persons, int loggedUserId)
         cout << "4. Wypisz wszystkich adresatow" << endl;
         cout << "5. Usun adresata" << endl;
         cout << "6. Edytuj adresata" << endl;
+        cout << "7. Zmien haslo" << endl;
+        cout << "8. Wyloguj sie" << endl;
         cout << "9. Zakoncz program" << endl;
         cout << "Twoj wybor: ";
         cin >> loggedUserChoice;
@@ -159,6 +167,16 @@ void userMenu (vector<Person> &persons, int loggedUserId)
         {
             editPerson(persons);
         }
+        else if (loggedUserChoice == '7')
+        {
+            changePassword(users, loggedUserId);
+        }
+        else if (loggedUserChoice == '8')
+        {
+            system("cls");
+            loggedUserId = 0;
+            loggedUserId = loginAndRegistrationMenu (users, loggedUserId);
+        }
         else if (loggedUserChoice == '9')
         {
             cout << endl << "Do zobaczenia!" << endl;
@@ -169,7 +187,6 @@ void userMenu (vector<Person> &persons, int loggedUserId)
 
 int userLogin(vector<User> &users, int currentUserId)
 {
-
     string login, password;
     int i = 0;
     system ("cls");
@@ -183,9 +200,9 @@ int userLogin(vector<User> &users, int currentUserId)
         {
             do
             {
-                for (int loginAttempt = 0; loginAttempt < 3; loginAttempt++)
+                for (int loginAttempts = 0; loginAttempts < 3; loginAttempts++)
                 {
-                    cout << "Podaj haslo. Pozostalo prob" << 3 - loginAttempt << ": ";
+                    cout << "Podaj haslo. Pozostalo prob" << 3 - loginAttempts << ": ";
                     cin >> password;
                     if (users[i].userPassword == password)
                     {
@@ -195,8 +212,9 @@ int userLogin(vector<User> &users, int currentUserId)
                         return currentUserId;
                     }
                 }
-                cout << "Podales 3 razy bledne haslo. Poczekaj 3 sekundy przed kolejna proba." << endl;
+                cout << "Podales 3 razy bledne haslo. Sprobuj ponownie." << endl;
                 Sleep(3000);
+                system ("cls");
 
             }while(password != users[i].userPassword);
         }
@@ -255,6 +273,26 @@ void userRegistration(vector<User> &users)
     }
     users.push_back(newUser);
     file.close();
+}
+
+void changePassword(vector<User> &users, int loggedUserId)
+{
+    string newPassword;
+
+    system("cls");
+    cout << "ZMIANA HASLA" << endl << endl;
+    cout << "Podaj nowe haslo: ";
+    cin >> newPassword;
+    for (int i = 0; i < users.size(); i++)
+    {
+        if (users[i].userId == loggedUserId)
+        {
+            users[i].userPassword = newPassword;
+            cout << "Haslo zostalo zmienione" << endl;
+            Sleep(2000);
+        }
+    }
+    loadUsersFromVectorToFile (users);
 }
 
 void deletePerson (vector<Person> &persons)
@@ -320,6 +358,36 @@ void loadPersonsFromVectorToFile (vector<Person> &persons)
                 file << persons[i].phoneNumber << "|";
                 file << persons[i].emailAdress << "|";
                 file << persons[i].adress << "|" << endl;
+            }
+        }
+        file.close();
+    }
+}
+
+void loadUsersFromVectorToFile (vector<User> &users)
+{
+    fstream file;
+
+    if(remove("Uzytkownicy.txt") != 0)
+    {
+        cout << "Nie znaleziono pliku Uzytkownicy.txt" << endl << endl;
+        Sleep(1000);
+    }
+    else
+    {
+        file.open ("Uzytkownicy.txt", ios::out);
+        if (file.good() == false)
+        {
+            file.open( "Uzytkownicy.txt", ios::out);
+        }
+
+        if (file.good())
+        {
+            for(int i = 0; i < users.size(); i++)
+            {
+                file << users[i].userId << "|";
+                file << users[i].userLogin << "|";
+                file << users[i].userPassword << "|" << endl;
             }
         }
         file.close();
@@ -463,6 +531,9 @@ void addPerson(vector<Person> &persons, int loggedUserId)
     newPerson.userIdNumber = loggedUserId;
 
     sizeOfPersonVector = persons.size();
+
+    cout << "wielkosc pliku: " << sizeOfPersonVector << endl;
+    system ("pause");
 
 
 
