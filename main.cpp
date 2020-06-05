@@ -19,9 +19,9 @@ struct Person
     string name = "", surname = "", phoneNumber = "", emailAdress = "", adress = "";
 };
 
-void loadPersonFromFileToVector(vector<Person> &persons);
+int loadPersonsFromFileToVector(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile);
 
-void addPerson(vector<Person> &persons, int loggedUserId);
+int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile);
 
 void displayAllPersons(vector<Person> &persons);
 
@@ -35,9 +35,9 @@ void loadPersonsFromVectorToFile (vector<Person> &persons);
 
 void deletePerson (vector<Person> &persons);
 
-void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId);
+int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, int lastIdNumberInFile);
 
-int loginAndRegistrationMenu (vector<User> &users, int loggedUserId);
+int loginAndRegistrationMenu (vector<User> &users, vector<Person> &persons, int loggedUserId);
 
 void userRegistration(vector<User> &users);
 
@@ -55,29 +55,21 @@ int main()
 {
     vector<Person> persons;
     vector<User> users;
-    int loggedUserId = 0;
+    int loggedUserId = 0, lastIdNumberInFile = 0;
 
     loadUsersFromFileToVector (users);
 
+    loggedUserId = loginAndRegistrationMenu (users, persons, loggedUserId);
 
-    //displayAllPersons(persons);
-
-    loggedUserId = loginAndRegistrationMenu (users, loggedUserId);
-
-    loadPersonFromFileToVector(persons);
-
-
-    userMenu (users, persons, loggedUserId);
-
-
+    userMenu (users, persons, loggedUserId, lastIdNumberInFile);
 
     return 0;
 }
 
-int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
+int loginAndRegistrationMenu (vector<User> &users, vector<Person> &persons, int loggedUserId)
 {
     char nonLoggedUserChoice;
-    int currentUserId = 0;
+    int currentUserId = 0, lastIdNumberInFile;
 
     while(true)
     {
@@ -98,8 +90,8 @@ int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
                 {
                     loggedUserId = userLogin(users, currentUserId);
                 }
+                loadPersonsFromFileToVector(persons, loggedUserId, lastIdNumberInFile);
                 return loggedUserId;
-                break;
             }
             else if (nonLoggedUserChoice == '2')
             {
@@ -108,8 +100,8 @@ int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
                 {
                     loggedUserId = userLogin(users, currentUserId);
                 }
+                loadPersonsFromFileToVector(persons, loggedUserId, lastIdNumberInFile);
                 return loggedUserId;
-                break;
             }
             else if (nonLoggedUserChoice == '9')
             {
@@ -119,13 +111,9 @@ int loginAndRegistrationMenu (vector<User> &users, int loggedUserId)
     }
 }
 
-void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId)
+int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
 {
     char loggedUserChoice;
-
-    cout << "Logged User ID: " << loggedUserId << endl;
-    Sleep(3000);
-
 
     while(true)
     {
@@ -145,7 +133,9 @@ void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId)
 
         if (loggedUserChoice == '1')
         {
-            addPerson(persons, loggedUserId);
+            persons.clear();
+            lastIdNumberInFile = loadPersonsFromFileToVector(persons, loggedUserId, lastIdNumberInFile);
+            lastIdNumberInFile = addPerson(persons, loggedUserId, lastIdNumberInFile);
         }
         else if (loggedUserChoice == '2')
         {
@@ -174,8 +164,9 @@ void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId)
         else if (loggedUserChoice == '8')
         {
             system("cls");
+            persons.clear();
             loggedUserId = 0;
-            loggedUserId = loginAndRegistrationMenu (users, loggedUserId);
+            loggedUserId = loginAndRegistrationMenu (users, persons, loggedUserId);
         }
         else if (loggedUserChoice == '9')
         {
@@ -183,6 +174,7 @@ void userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId)
             exit(0);
         }
     }
+    return lastIdNumberInFile;
 }
 
 int userLogin(vector<User> &users, int currentUserId)
@@ -473,20 +465,10 @@ void editPerson (vector<Person> &persons)
 void displayAllPersons(vector<Person> &persons)
 {
     cout << "Oto twoja lista adresatow: " << endl << endl;
-    fstream file;
-    file.open("KsiazkaAdresowa.txt", ios::in);
-    if (file.good() == false)
-    {
-        cout << "Plik KsiazkaAdresowa nie istnieje. Dodaj pierwsza osobe do listy, a plik stworzy sie automatycznie." << endl << endl;
-        cout << "Aby przejsc do MENU nacisnij dowolny klawisz." << endl;
-        cin.sync();
-        getchar();
-    }
-    else
-    {
         for (int i = 0; i < persons.size(); i++)
         {
             cout << persons[i].idNumber << "|";
+            cout << persons[i].userIdNumber << "|";
             cout << persons[i].name << "|";
             cout << persons[i].surname << "|";
             cout << persons[i].phoneNumber << "|";
@@ -497,14 +479,11 @@ void displayAllPersons(vector<Person> &persons)
         cout << "Aby przejsc do MENU nacisnij dowolny klawisz." << endl;
         cin.sync();
         cin.get();
-    }
-    file.close();
 }
 
-void addPerson(vector<Person> &persons, int loggedUserId)
+int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
 {
     Person newPerson;
-    int sizeOfPersonVector;
     fstream file;
 
     file.open ("KsiazkaAdresowa.txt", ios::out | ios::app);
@@ -530,25 +509,13 @@ void addPerson(vector<Person> &persons, int loggedUserId)
 
     newPerson.userIdNumber = loggedUserId;
 
-    sizeOfPersonVector = persons.size();
-
-    cout << "wielkosc pliku: " << sizeOfPersonVector << endl;
-    system ("pause");
-
-
-
-    if(sizeOfPersonVector == 0)
+    if(lastIdNumberInFile == 0)
     {
         newPerson.idNumber = 1;
     }
     else
     {
-        for (int i = sizeOfPersonVector; i >= sizeOfPersonVector - 1; i--)
-        {
-            newPerson.idNumber = persons[i].idNumber + 1;
-            cout << "wielkosc wektora: " << newPerson.idNumber << endl;
-            system("pause");
-        }
+        newPerson.idNumber = lastIdNumberInFile + 1;
     }
     if (file.good())
     {
@@ -569,6 +536,9 @@ void addPerson(vector<Person> &persons, int loggedUserId)
     }
     persons.push_back(newPerson);
     file.close();
+    lastIdNumberInFile++;
+
+    return lastIdNumberInFile;
 }
 
 void searchPersonByName(vector<Person> &persons)
@@ -643,7 +613,7 @@ void searchPersonBySurname(vector<Person> &persons)
     getchar();
 }
 
-void loadPersonFromFileToVector (vector<Person> &persons)
+int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
 {
     Person newPerson;
     char sign = '|';
@@ -692,15 +662,21 @@ void loadPersonFromFileToVector (vector<Person> &persons)
                     numberOfSign++;
                     break;
                 }
-                if (numberOfSign >= 7)
+                if (numberOfSign >= 7 && newPerson.userIdNumber == loggedUserId)
                 {
                     numberOfSign = 0;
                     persons.push_back(newPerson);
                 }
+                else if (numberOfSign >= 7)
+                {
+                    numberOfSign = 0;
+                }
             }
+            lastIdNumberInFile = newPerson.idNumber;
         }
     }
     file.close();
+    return lastIdNumberInFile;
 }
 
 void loadUsersFromFileToVector (vector<User> &users)
