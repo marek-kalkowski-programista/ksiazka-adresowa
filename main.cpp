@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <cstdio>
 
 using namespace std;
 
@@ -29,7 +30,7 @@ void searchPersonByName(vector<Person> &persons);
 
 void searchPersonBySurname(vector<Person> &persons);
 
-void editPerson (vector<Person> &persons);
+int editPerson (vector<Person> &persons);
 
 void loadPersonsFromVectorToFile (vector<Person> &persons);
 
@@ -50,6 +51,8 @@ int userLogin(vector<User> &users, int currentUserId);
 void changePassword(vector<User> &users, int loggedUserId);
 
 void loadUsersFromVectorToFile (vector<User> &users);
+
+void renameFile();
 
 int main()
 {
@@ -151,7 +154,7 @@ int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, in
         }
         else if (loggedUserChoice == '5')
         {
-            deletePerson(persons);
+            //deletePerson(persons);
         }
         else if (loggedUserChoice == '6')
         {
@@ -286,7 +289,7 @@ void changePassword(vector<User> &users, int loggedUserId)
     }
     loadUsersFromVectorToFile (users);
 }
-
+/*
 void deletePerson (vector<Person> &persons)
 {
     Person newPerson;
@@ -322,38 +325,128 @@ void deletePerson (vector<Person> &persons)
     }
     loadPersonsFromVectorToFile(persons);
 }
+*/
 
-void loadPersonsFromVectorToFile (vector<Person> &persons)
+int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
 {
+    Person newPerson;
+    char sign = '|';
+    int numberOfSign = 0;
+    string partOfLine;
     fstream file;
-
-    if(remove("KsiazkaAdresowa.txt") != 0)
+    file.open("KsiazkaAdresowa.txt", ios::in);
+    if (file.good() == true)
     {
-        cout << "Nie znaleziono pliku KsiazkaAdresowa.txt" << endl << endl;
-        Sleep(1000);
-    }
-    else
-    {
-        file.open ("KsiazkaAdresowa.txt", ios::out);
-        if (file.good() == false)
+        if(file.eof() == false)
         {
-            file.open( "KsiazkaAdresowa.txt", ios::out);
-        }
-
-        if (file.good())
-        {
-            for(int i = 0; i < persons.size(); i++)
+            while(getline(file, partOfLine, sign))
             {
-                file << persons[i].idNumber << "|";
-                file << persons[i].name << "|";
-                file << persons[i].surname << "|";
-                file << persons[i].phoneNumber << "|";
-                file << persons[i].emailAdress << "|";
-                file << persons[i].adress << "|" << endl;
+                switch(numberOfSign)
+                {
+                case 0:
+                    if(partOfLine == "\n")
+                    {
+                        break;
+                    }
+                    newPerson.idNumber = atoi(partOfLine.c_str());
+                    numberOfSign++;
+                    break;
+                case 1:
+                    newPerson.userIdNumber = atoi(partOfLine.c_str());
+                    numberOfSign++;
+                    break;
+                case 2:
+                    newPerson.name = partOfLine;
+                    numberOfSign++;
+                    break;
+                case 3:
+                    newPerson.surname = partOfLine;
+                    numberOfSign++;
+                    break;
+                case 4:
+                    newPerson.phoneNumber = partOfLine;
+                    numberOfSign++;
+                    break;
+                case 5:
+                    newPerson.emailAdress = partOfLine;
+                    numberOfSign++;
+                    break;
+                case 6:
+                    newPerson.adress = partOfLine;
+                    numberOfSign++;
+                    break;
+                }
+                if (numberOfSign >= 7 && newPerson.userIdNumber == loggedUserId)
+                {
+                    numberOfSign = 0;
+                    persons.push_back(newPerson);
+                }
+                else if (numberOfSign >= 7)
+                {
+                    numberOfSign = 0;
+                }
+            }
+            lastIdNumberInFile = newPerson.idNumber;
+        }
+    }
+    file.close();
+    return lastIdNumberInFile;
+}
+
+void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEdit)
+{
+    fstream file, file2;
+    char sign = '|';
+    string idNumber, restOfData, line;
+
+    file.open ("KsiazkaAdresowa.txt", ios::in | ios::out);
+    file2.open ("KsiazkaAdresowa_tymczasowy.txt", ios::out | ios::app);
+    if (file.good() == false)
+    {
+        file.open( "KsiazkaAdresowa.txt", ios::in | ios::out);
+    }
+    else if (file2.good() == false)
+    {
+        file2.open( "KsiazkaAdresowa_tymczasowy.txt", ios::out | ios::app);
+    }
+
+    if (file.good())
+    {
+        if(file.eof() == false)
+        {
+            while(getline(file, idNumber, sign))
+            {
+                if (atoi(idNumber.c_str()) != idPersonToEdit)
+                {
+                    getline(file, restOfData);
+                    line = idNumber + "|" + restOfData;
+                    file2 << line << endl;
+                }
+                else
+                {
+                    getline(file, restOfData);
+                    for (int i = 0; i <= persons.size(); i++)
+                    {
+                        if (persons[i].idNumber == idPersonToEdit)
+                        {
+                            file2 << persons[i].idNumber << "|";
+                            file2 << persons[i].userIdNumber << "|";
+                            file2 << persons[i].name << "|";
+                            file2 << persons[i].surname << "|";
+                            file2 << persons[i].phoneNumber << "|";
+                            file2 << persons[i].emailAdress << "|";
+                            file2 << persons[i].adress << "|" << endl;
+                        }
+                    }
+                }
             }
         }
-        file.close();
     }
+    file.close();
+    file2.close();
+
+    renameFile();
+
 }
 
 void loadUsersFromVectorToFile (vector<User> &users)
@@ -386,7 +479,7 @@ void loadUsersFromVectorToFile (vector<User> &users)
     }
 }
 
-void editPerson (vector<Person> &persons)
+int editPerson (vector<Person> &persons)
 {
     Person newPerson;
     char editUserChoice;
@@ -414,6 +507,7 @@ void editPerson (vector<Person> &persons)
             cout << "4. email" << endl;
             cout << "5. adres" << endl;
             cout << "6. powrot do menu" << endl;
+            cout << "Twoj wybor: ";
             cin >> editUserChoice;
 
             if (editUserChoice == '1')
@@ -459,7 +553,8 @@ void editPerson (vector<Person> &persons)
             }
         }
     }
-    loadPersonsFromVectorToFile (persons);
+    loadPersonsFromVectorToFile (persons, idPersonToEdit);
+    return idPersonToEdit;
 }
 
 void displayAllPersons(vector<Person> &persons)
@@ -613,72 +708,6 @@ void searchPersonBySurname(vector<Person> &persons)
     getchar();
 }
 
-int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
-{
-    Person newPerson;
-    char sign = '|';
-    int numberOfSign = 0;
-    string partOfLine;
-    fstream file;
-    file.open("KsiazkaAdresowa.txt", ios::in);
-    if (file.good() == true)
-    {
-        if(file.eof() == false)
-        {
-            while(getline(file, partOfLine, sign))
-            {
-                switch(numberOfSign)
-                {
-                case 0:
-                    if(partOfLine == "\n")
-                    {
-                        break;
-                    }
-                    newPerson.idNumber = atoi(partOfLine.c_str());
-                    numberOfSign++;
-                    break;
-                case 1:
-                    newPerson.userIdNumber = atoi(partOfLine.c_str());
-                    numberOfSign++;
-                    break;
-                case 2:
-                    newPerson.name = partOfLine;
-                    numberOfSign++;
-                    break;
-                case 3:
-                    newPerson.surname = partOfLine;
-                    numberOfSign++;
-                    break;
-                case 4:
-                    newPerson.phoneNumber = partOfLine;
-                    numberOfSign++;
-                    break;
-                case 5:
-                    newPerson.emailAdress = partOfLine;
-                    numberOfSign++;
-                    break;
-                case 6:
-                    newPerson.adress = partOfLine;
-                    numberOfSign++;
-                    break;
-                }
-                if (numberOfSign >= 7 && newPerson.userIdNumber == loggedUserId)
-                {
-                    numberOfSign = 0;
-                    persons.push_back(newPerson);
-                }
-                else if (numberOfSign >= 7)
-                {
-                    numberOfSign = 0;
-                }
-            }
-            lastIdNumberInFile = newPerson.idNumber;
-        }
-    }
-    file.close();
-    return lastIdNumberInFile;
-}
-
 void loadUsersFromFileToVector (vector<User> &users)
 {
     User newUser;
@@ -721,4 +750,26 @@ void loadUsersFromFileToVector (vector<User> &users)
         }
     }
     file.close();
+}
+
+void renameFile()
+{
+    if (remove ("KsiazkaAdresowa.txt") == 0)
+    {
+        if (rename("KsiazkaAdresowa_tymczasowy.txt", "KsiazkaAdresowa.txt") == 0)
+        {
+            remove ("KsiazkaAdresowa_tymczasowy.txt");
+        }
+        else
+        {
+            cout << "Nie udalo sie zmienic nazwy pliku." << endl;
+            Sleep(2000);
+        }
+    }
+    else
+    {
+        cout << "Nie udalo sie usunac pliku KsiazkaAdresowa.txt." << endl;
+        Sleep(2000);
+    }
+
 }
