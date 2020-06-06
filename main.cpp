@@ -32,9 +32,9 @@ void searchPersonBySurname(vector<Person> &persons);
 
 int editPerson (vector<Person> &persons);
 
-void loadPersonsFromVectorToFile (vector<Person> &persons);
+void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEditOrDelete);
 
-void deletePerson (vector<Person> &persons);
+int deletePerson (vector<Person> &persons);
 
 int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, int lastIdNumberInFile);
 
@@ -154,7 +154,7 @@ int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, in
         }
         else if (loggedUserChoice == '5')
         {
-            //deletePerson(persons);
+            deletePerson(persons);
         }
         else if (loggedUserChoice == '6')
         {
@@ -289,12 +289,12 @@ void changePassword(vector<User> &users, int loggedUserId)
     }
     loadUsersFromVectorToFile (users);
 }
-/*
-void deletePerson (vector<Person> &persons)
+
+int deletePerson (vector<Person> &persons)
 {
     Person newPerson;
-    int idPersonToDelete;
     char confirmationToDelete;
+    int idPersonToDelete;
     cout << endl << "Podaj ID adresata, ktorego chcesz usunac: ";
     cin >> idPersonToDelete;
 
@@ -305,6 +305,7 @@ void deletePerson (vector<Person> &persons)
             system("cls");
             cout << "Osoba o podanym ID: " << endl << endl;
             cout << persons[i].idNumber << "|";
+            cout << persons[i].userIdNumber << "|";
             cout << persons[i].name << "|";
             cout << persons[i].surname << "|";
             cout << persons[i].phoneNumber << "|";
@@ -323,9 +324,11 @@ void deletePerson (vector<Person> &persons)
             }
         }
     }
-    loadPersonsFromVectorToFile(persons);
+
+    loadPersonsFromVectorToFile(persons, idPersonToDelete);
+
+    return idPersonToDelete;
 }
-*/
 
 int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
 {
@@ -393,7 +396,7 @@ int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int 
     return lastIdNumberInFile;
 }
 
-void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEdit)
+void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEditOrDelete)
 {
     fstream file, file2;
     char sign = '|';
@@ -416,7 +419,7 @@ void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEdit)
         {
             while(getline(file, idNumber, sign))
             {
-                if (atoi(idNumber.c_str()) != idPersonToEdit)
+                if (atoi(idNumber.c_str()) != idPersonToEditOrDelete)
                 {
                     getline(file, restOfData);
                     line = idNumber + "|" + restOfData;
@@ -427,7 +430,7 @@ void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEdit)
                     getline(file, restOfData);
                     for (int i = 0; i <= persons.size(); i++)
                     {
-                        if (persons[i].idNumber == idPersonToEdit)
+                        if (persons[i].idNumber == idPersonToEditOrDelete)
                         {
                             file2 << persons[i].idNumber << "|";
                             file2 << persons[i].userIdNumber << "|";
@@ -446,7 +449,6 @@ void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEdit)
     file2.close();
 
     renameFile();
-
 }
 
 void loadUsersFromVectorToFile (vector<User> &users)
