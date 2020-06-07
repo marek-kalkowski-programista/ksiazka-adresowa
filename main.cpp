@@ -24,17 +24,19 @@ int loadPersonsFromFileToVector(vector<Person> &persons, int loggedUserId, int l
 
 int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile);
 
-void displayAllPersons(vector<Person> &persons);
+int displayAllPersons(vector<Person> &persons);
 
-void searchPersonByName(vector<Person> &persons);
+int searchPersonByName(vector<Person> &persons);
 
-void searchPersonBySurname(vector<Person> &persons);
+int searchPersonBySurname(vector<Person> &persons);
 
-int editPerson (vector<Person> &persons);
+int editPerson (vector<Person> &persons, int loggedUserId);
 
-void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEditOrDelete);
+void loadPersonsFromVectorToFileAfterEditPerson (vector<Person> &persons, int idPersonToEdit);
 
-int deletePerson (vector<Person> &persons);
+void loadPersonsFromVectorToFileAfterDeletePerson (vector<Person> &persons, int idPersonToDelete);
+
+int deletePerson (vector<Person> &persons, int loggedUserId);
 
 int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, int lastIdNumberInFile);
 
@@ -154,11 +156,11 @@ int userMenu (vector<User> &users, vector<Person> &persons, int loggedUserId, in
         }
         else if (loggedUserChoice == '5')
         {
-            deletePerson(persons);
+            deletePerson(persons, loggedUserId);
         }
         else if (loggedUserChoice == '6')
         {
-            editPerson(persons);
+            editPerson(persons, loggedUserId);
         }
         else if (loggedUserChoice == '7')
         {
@@ -290,17 +292,31 @@ void changePassword(vector<User> &users, int loggedUserId)
     loadUsersFromVectorToFile (users);
 }
 
-int deletePerson (vector<Person> &persons)
+int deletePerson (vector<Person> &persons, int loggedUserId)
 {
     Person newPerson;
     char confirmationToDelete;
     int idPersonToDelete;
+
+    if (persons.size() == 0)
+    {
+        cout << endl << "Lista Twoich adresatow jest pusta. Najpierw dodaj nowa osobe." << endl << endl;
+        Sleep(3000);
+        return 0;
+    }
     cout << endl << "Podaj ID adresata, ktorego chcesz usunac: ";
     cin >> idPersonToDelete;
 
     for (int i = 0; i <= persons.size(); i++)
     {
-        if (persons[i].idNumber == idPersonToDelete)
+        if (persons[i].idNumber != idPersonToDelete && persons[i].userIdNumber != loggedUserId)
+        {
+            cout << endl << "Na twojej liscie Adresatow nie ma osoby z takim ID. Sprobuj ponownie." << endl;
+            idPersonToDelete = 0;
+            Sleep(3000);
+            return 0;
+        }
+        else if (persons[i].idNumber == idPersonToDelete)
         {
             system("cls");
             cout << "Osoba o podanym ID: " << endl << endl;
@@ -322,11 +338,14 @@ int deletePerson (vector<Person> &persons)
                 Sleep(1000);
                 break;
             }
+            else
+            {
+                idPersonToDelete = 0;
+                return 0;
+            }
         }
     }
-
-    loadPersonsFromVectorToFile(persons, idPersonToDelete);
-
+    loadPersonsFromVectorToFileAfterDeletePerson(persons, idPersonToDelete);
     return idPersonToDelete;
 }
 
@@ -337,7 +356,7 @@ int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int 
     int numberOfSign = 0;
     string partOfLine;
     fstream file;
-    file.open("KsiazkaAdresowa.txt", ios::in);
+    file.open("Adresaci.txt", ios::in);
     if (file.good() == true)
     {
         if(file.eof() == false)
@@ -396,30 +415,30 @@ int loadPersonsFromFileToVector (vector<Person> &persons, int loggedUserId, int 
     return lastIdNumberInFile;
 }
 
-void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEditOrDelete)
+void loadPersonsFromVectorToFileAfterEditPerson (vector<Person> &persons, int idPersonToEdit)
 {
     fstream file, file2;
     char sign = '|';
     string idNumber, restOfData, line;
 
-    file.open ("KsiazkaAdresowa.txt", ios::in | ios::out);
-    file2.open ("KsiazkaAdresowa_tymczasowy.txt", ios::out | ios::app);
+    file.open ("Adresaci.txt", ios::in | ios::out);
+    file2.open ("Adresaci_tymczasowy.txt", ios::out | ios::app);
+
     if (file.good() == false)
     {
-        file.open( "KsiazkaAdresowa.txt", ios::in | ios::out);
+        file.open( "Adresaci.txt", ios::in | ios::out);
     }
     else if (file2.good() == false)
     {
-        file2.open( "KsiazkaAdresowa_tymczasowy.txt", ios::out | ios::app);
+        file2.open( "Adresaci_tymczasowy.txt", ios::out | ios::app);
     }
-
     if (file.good())
     {
         if(file.eof() == false)
         {
             while(getline(file, idNumber, sign))
             {
-                if (atoi(idNumber.c_str()) != idPersonToEditOrDelete)
+                if (atoi(idNumber.c_str()) != idPersonToEdit)
                 {
                     getline(file, restOfData);
                     line = idNumber + "|" + restOfData;
@@ -430,7 +449,7 @@ void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEditOrD
                     getline(file, restOfData);
                     for (int i = 0; i <= persons.size(); i++)
                     {
-                        if (persons[i].idNumber == idPersonToEditOrDelete)
+                        if (persons[i].idNumber == idPersonToEdit)
                         {
                             file2 << persons[i].idNumber << "|";
                             file2 << persons[i].userIdNumber << "|";
@@ -439,6 +458,55 @@ void loadPersonsFromVectorToFile (vector<Person> &persons, int idPersonToEditOrD
                             file2 << persons[i].phoneNumber << "|";
                             file2 << persons[i].emailAdress << "|";
                             file2 << persons[i].adress << "|" << endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    file.close();
+    file2.close();
+
+    renameFile();
+}
+
+void loadPersonsFromVectorToFileAfterDeletePerson (vector<Person> &persons, int idPersonToDelete)
+{
+    fstream file, file2;
+    char sign = '|';
+    string idNumber, restOfData, line;
+
+    file.open ("Adresaci.txt", ios::in | ios::out);
+    file2.open ("Adresaci_tymczasowy.txt", ios::out | ios::app);
+
+    if (file.good() == false)
+    {
+        file.open( "Adresaci.txt", ios::in | ios::out);
+    }
+    else if (file2.good() == false)
+    {
+        file2.open( "Adresaci_tymczasowy.txt", ios::out | ios::app);
+    }
+    if (file.good())
+    {
+        if(file.eof() == false)
+        {
+            while(getline(file, idNumber, sign))
+            {
+                if (atoi(idNumber.c_str()) != idPersonToDelete)
+                {
+                    getline(file, restOfData);
+                    line = idNumber + "|" + restOfData;
+                    file2 << line << endl;
+                }
+                else
+                {
+                    getline(file, restOfData);
+                    for (int i = 0; i <= persons.size(); i++)
+                    {
+                        if (persons[i].idNumber == idPersonToDelete)
+                        {
+                            file2 << "";
                         }
                     }
                 }
@@ -481,17 +549,31 @@ void loadUsersFromVectorToFile (vector<User> &users)
     }
 }
 
-int editPerson (vector<Person> &persons)
+int editPerson (vector<Person> &persons, int loggedUserId)
 {
     Person newPerson;
     char editUserChoice;
     int idPersonToEdit;
+
+    if (persons.size() == 0)
+    {
+        cout << endl << "Lista Twoich adresatow jest pusta. Najpierw dodaj nowa osobe." << endl << endl;
+        Sleep(3000);
+        return 0;
+    }
     cout << endl << "Podaj ID adresata, ktorego chcesz edytowac: ";
     cin >> idPersonToEdit;
 
     for (int i = 0; i <= persons.size(); i++)
     {
-        if (persons[i].idNumber == idPersonToEdit)
+        if (persons[i].idNumber != idPersonToEdit && persons[i].userIdNumber != loggedUserId)
+        {
+            cout << endl << "Na twojej liscie Adresatow nie ma osoby z takim ID. Sprobuj ponownie." << endl;
+            idPersonToEdit = 0;
+            Sleep(3000);
+            return 0;
+        }
+        else if (persons[i].idNumber == idPersonToEdit)
         {
             system("cls");
             cout << "Osoba o podanym ID: " << endl << endl;
@@ -555,12 +637,20 @@ int editPerson (vector<Person> &persons)
             }
         }
     }
-    loadPersonsFromVectorToFile (persons, idPersonToEdit);
+    loadPersonsFromVectorToFileAfterEditPerson (persons, idPersonToEdit);
     return idPersonToEdit;
 }
 
-void displayAllPersons(vector<Person> &persons)
+int displayAllPersons(vector<Person> &persons)
 {
+    int personsVectorSize = persons.size();
+
+    if (personsVectorSize == 0)
+    {
+        cout << endl << "Lista Twoich adresatow jest pusta. Najpierw dodaj nowa osobe." << endl << endl;
+        Sleep(2000);
+        return 0;
+    }
     cout << "Oto twoja lista adresatow: " << endl << endl;
         for (int i = 0; i < persons.size(); i++)
         {
@@ -576,6 +666,7 @@ void displayAllPersons(vector<Person> &persons)
         cout << "Aby przejsc do MENU nacisnij dowolny klawisz." << endl;
         cin.sync();
         cin.get();
+        return 0;
 }
 
 int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
@@ -583,10 +674,10 @@ int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
     Person newPerson;
     fstream file;
 
-    file.open ("KsiazkaAdresowa.txt", ios::out | ios::app);
+    file.open ("Adresaci.txt", ios::out | ios::app);
     if (file.good() == false)
     {
-        file.open( "KsiazkaAdresowa.txt", ios::out | ios::app);
+        file.open( "Adresaci.txt", ios::out | ios::app);
     }
 
     system ("cls");
@@ -629,7 +720,7 @@ int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
     }
     else
     {
-        cout << "Nie mozna otworzyc pliku: KsiazkaAdresowa.txt" << endl;
+        cout << "Nie mozna otworzyc pliku: Adresaci.txt" << endl;
     }
     persons.push_back(newPerson);
     file.close();
@@ -638,10 +729,18 @@ int addPerson(vector<Person> &persons, int loggedUserId, int lastIdNumberInFile)
     return lastIdNumberInFile;
 }
 
-void searchPersonByName(vector<Person> &persons)
+int searchPersonByName(vector<Person> &persons)
 {
     string nameOfSearchingPerson;
     fstream file;
+    int personsVectorSize = persons.size();
+
+    if (personsVectorSize == 0)
+    {
+        cout << endl << "Lista Twoich adresatow jest pusta. Najpierw dodaj nowa osobe." << endl << endl;
+        Sleep(2000);
+        return 0;
+    }
 
     cout << "Wpisz imie osoby, ktorej szukasz: ";
     cin.sync();
@@ -673,11 +772,20 @@ void searchPersonByName(vector<Person> &persons)
     }
     cout << endl << "Nacisnij ENTER, aby powrocic do MENU" << endl;
     getchar();
+    return 0;
 }
 
-void searchPersonBySurname(vector<Person> &persons)
+int searchPersonBySurname(vector<Person> &persons)
 {
     string surnameOfSearchingPerson;
+    int personsVectorSize = persons.size();
+
+    if (personsVectorSize == 0)
+    {
+        cout << endl << "Lista Twoich adresatow jest pusta. Najpierw dodaj nowa osobe." << endl << endl;
+        Sleep(2000);
+        return 0;
+    }
 
     cout << "Wpisz nazwisko osoby, ktorej szukasz: ";
     cin.sync();
@@ -708,6 +816,7 @@ void searchPersonBySurname(vector<Person> &persons)
     }
     cout << endl << "Nacisnij ENTER, aby powrocic do MENU" << endl;
     getchar();
+    return 0;
 }
 
 void loadUsersFromFileToVector (vector<User> &users)
@@ -756,11 +865,11 @@ void loadUsersFromFileToVector (vector<User> &users)
 
 void renameFile()
 {
-    if (remove ("KsiazkaAdresowa.txt") == 0)
+    if (remove ("Adresaci.txt") == 0)
     {
-        if (rename("KsiazkaAdresowa_tymczasowy.txt", "KsiazkaAdresowa.txt") == 0)
+        if (rename("Adresaci_tymczasowy.txt", "Adresaci.txt") == 0)
         {
-            remove ("KsiazkaAdresowa_tymczasowy.txt");
+            remove ("Adresaci_tymczasowy.txt");
         }
         else
         {
@@ -770,7 +879,7 @@ void renameFile()
     }
     else
     {
-        cout << "Nie udalo sie usunac pliku KsiazkaAdresowa.txt." << endl;
+        cout << "Nie udalo sie usunac pliku Adresaci.txt." << endl;
         Sleep(2000);
     }
 
