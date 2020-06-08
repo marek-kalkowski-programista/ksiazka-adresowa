@@ -101,12 +101,7 @@ int loginAndRegistrationMenu (vector<User> &users, vector<Person> &persons, int 
             else if (nonLoggedUserChoice == '2')
             {
                 userRegistration(users);
-                while(loggedUserId == 0)
-                {
-                    loggedUserId = userLogin(users, currentUserId);
-                }
-                loadPersonsFromFileToVector(persons, loggedUserId, lastIdNumberInFile);
-                return loggedUserId;
+                continue;
             }
             else if (nonLoggedUserChoice == '9')
             {
@@ -746,7 +741,7 @@ int searchPersonByName(vector<Person> &persons)
     cin.sync();
     getline(cin, nameOfSearchingPerson);
 
-    for (int i = 0; i <= persons.size(); i++)
+    for (int i = 0; i < persons.size(); i++)
     {
         if (persons[i].name == nameOfSearchingPerson)
         {
@@ -756,7 +751,7 @@ int searchPersonByName(vector<Person> &persons)
 
     }
     int j = 0;
-    while (j <= persons.size())
+    while (j < persons.size())
     {
         if (persons[j].name == nameOfSearchingPerson)
         {
@@ -791,7 +786,7 @@ int searchPersonBySurname(vector<Person> &persons)
     cin.sync();
     getline(cin, surnameOfSearchingPerson);
 
-    for (int i = 0; i <= persons.size(); i++)
+    for (int i = 0; i < persons.size(); i++)
     {
         if (persons[i].surname == surnameOfSearchingPerson)
         {
@@ -800,7 +795,7 @@ int searchPersonBySurname(vector<Person> &persons)
         }
     }
     int j = 0;
-    while (j <= persons.size())
+    while (j < persons.size())
     {
         if (persons[j].surname == surnameOfSearchingPerson)
         {
